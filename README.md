@@ -6,7 +6,7 @@ Based on the [official template](https://github.com/ibm-developer-skills-network
 
 ## Setup and run
 
-Fresh local verification used **Python 3.10.11, Django 5.2.18 and requests 2.32.5**. Python **3.10 or newer** is required; the container uses Python 3.11. A matching local environment is:
+Fresh local verification used **Python 3.10.11, Django 5.2.18, requests 2.32.5 and WhiteNoise 6.12.0**. Python **3.10 or newer** is required; the container uses Python 3.11. A matching local environment is:
 
 ```sh
 python3.10 -m venv .venv
@@ -14,6 +14,7 @@ python3.10 -m venv .venv
 python -m pip install --no-cache-dir -r requirements.txt
 python manage.py migrate
 python manage.py check
+python manage.py collectstatic --noinput
 python manage.py test concert
 python manage.py runserver 0.0.0.0:8000
 ```
@@ -63,7 +64,7 @@ Browser screenshots, a visible modal click, cloud deployment and integration wit
 
 ## Container and cluster deployment
 
-The Dockerfile uses `python:3.11-slim` for compatibility with pinned Django 5.2.18, retaining the official lab's port **8000** and `python manage.py runserver 0.0.0.0:8000` command. It installs the application's pinned Django/requests dependencies and copies its source. The entrypoint applies committed migrations first. It starts without an auto-created administrator unless both `DJANGO_SUPERUSER_USERNAME` and `DJANGO_SUPERUSER_PASSWORD` are provided through the environment; `DJANGO_SUPERUSER_EMAIL` is optional. Bootstrap is idempotent and never replaces an existing password or promotes a normal account. No administrator credentials are included in source.
+The Dockerfile uses `python:3.11-slim` for compatibility with pinned Django 5.2.18, retaining the official lab's port **8000** and `python manage.py runserver 0.0.0.0:8000` command. It installs the application's pinned Django/requests/WhiteNoise dependencies and copies its source. During image build, `collectstatic --noinput` collects and compresses static assets into `/app/staticfiles`; the build then makes that tree readable and non-writable. The runtime entrypoint does not collect or write static files, so an arbitrary OpenShift UID needs only read access to the application tree. The entrypoint applies committed migrations first. It starts without an auto-created administrator unless both `DJANGO_SUPERUSER_USERNAME` and `DJANGO_SUPERUSER_PASSWORD` are provided through the environment; `DJANGO_SUPERUSER_EMAIL` is optional. Bootstrap is idempotent and never replaces an existing password or promotes a normal account. No administrator credentials are included in source.
 
 ```sh
 docker build -t djangoserver:1 .
@@ -80,4 +81,6 @@ kubectl rollout status deployment/djangoserver
 kubectl port-forward service/djangoserver 8000:8000
 ```
 
-The lab's runserver command and debug/static behavior are retained for course evidence. A hardened public deployment with `DJANGO_DEBUG=0` needs an appropriate static-file serving setup as well as HTTPS and configured secrets. The container's default SQLite database is in `/tmp` for random-UID compatibility and is ephemeral; use durable storage when persistence is required. Image build, registry push, cluster apply, real service URLs and browser deployment screenshots must be verified in the actual cloud environment.
+The lab's runserver command is retained for course evidence. WhiteNoise now serves the collected CSS, JavaScript, fonts and admin assets with `DJANGO_DEBUG=0`; HTTPS and configured secrets are still required for deployment. Its middleware follows Django's SecurityMiddleware and the compressed storage preserves the supplied asset URLs. The setup follows the [primary WhiteNoise Django guide](https://whitenoise.readthedocs.io/en/stable/django.html) and pins [WhiteNoise 6.12.0](https://pypi.org/project/whitenoise/6.12.0/). The container's default SQLite database is in `/tmp` for random-UID compatibility and is ephemeral; use durable storage when persistence is required. Image build, registry push, cluster apply, real service URLs and browser deployment screenshots must be verified in the actual cloud environment.
+
+A separate static-file regression check ran the actual entrypoint with `DJANGO_DEBUG=0`, an ephemeral secret and database, and a read-only collected tree. All seven referenced/check assets returned HTTP 200, including application CSS, Bootstrap CSS/JS and admin CSS. Bootstrap gzip decompressed to the original bytes; the collected file hashes remained unchanged. The 21 existing application tests, system and migration-drift checks also passed after this change. This verifies source behavior locally; the new image still needs a real cloud build.

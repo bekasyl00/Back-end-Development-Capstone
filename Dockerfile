@@ -10,7 +10,9 @@ WORKDIR /app
 COPY requirements.txt /app/requirements.txt
 RUN python -m pip install --no-cache-dir -r requirements.txt
 COPY . /app
-RUN chmod +x /app/entrypoint.sh
+RUN chmod +x /app/entrypoint.sh \
+    && DJANGO_DEBUG=1 python manage.py collectstatic --noinput \
+    && chmod -R a=rX /app/staticfiles
 EXPOSE 8000
 ENTRYPOINT ["/bin/sh", "/app/entrypoint.sh"]
 CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
