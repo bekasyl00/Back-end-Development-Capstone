@@ -1,3 +1,4 @@
 # Runtime dependencies used by this Django application (Python >= 3.10).
 Django==5.2.18
 requests==2.32.5
+whitenoise==6.12.0
