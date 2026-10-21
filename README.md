@@ -1,136 +1,83 @@
-# Lab
+# Back-end Development Capstone: Django application
 
-1.  Clone git repo: `git clone https://github.com/ibm-developer-skills-network/sfvih-Back-end-Development-Capstone.git`
-2.  Get into the directory by `cd sfvih-Back-end-Development-Capstone`
-3.  Get into Django code `cd djangoserver`
-4.  Install requirements `pip install -r requirements.txt`
-5.  Run the server `python manage.py runserver`
-6.  It will tell you that you have unapplied migrations.
+Djirection's website for the IBM **Back-end Application Development Capstone Project**. This completes the official Django exercises: model fields and migrations, songs/lyrics, photos, registration and sessions, concert attendance, and concert administration.
 
-    **Migrations** are Django’s way of propagating changes you make to your models (adding a field, deleting a model, etc.) into your database schema. They’re designed to be mostly automatic, but you’ll need to know when to make migrations, when to run them, and the common problems you might run into. There are several commands which you will use to interact with migrations and Django’s handling of database schema:
+Based on the [official template](https://github.com/ibm-developer-skills-network/sfvih-Back-end-Development-Capstone), commit `455089e3b5ccae97a1d8615671b63023c780c8c2`. Existing templates, static assets and empty `concert/tests.py` are unchanged. Runtime requirements and setup are limited to the packages this Django application uses; the Dockerfile, entrypoint and deployment manifest are completed for the deployment exercises. Code, added tests and documentation were prepared with OpenAI Codex assistance; see [AI_ACKNOWLEDGEMENT.md](AI_ACKNOWLEDGEMENT.md).
 
-    1. **_migrate_**, which is responsible for applying and unapplying migrations.
-    2. **_makemigrations_**, which is responsible for creating new migrations based on the changes you have made to your models.
-    3. **_sqlmigrate_**, which displays the SQL statements for a migration.
-    4. **_showmigrations_**, which lists a project’s migrations and their status.
+## Setup and run
 
-7.  Create the initial migrations and generate the database schema:
+Fresh local verification used **Python 3.10.11, Django 5.2.18 and requests 2.32.5**. Python **3.10 or newer** is required; the container uses Python 3.11. A matching local environment is:
 
-    ```shell
-    python manage.py makemigrations
-    python manage.py migrate
-    ```
-
-8.  Run server successfully this time: `python manage.py runserver`
-9.  Launch Application
-10. Click on Songs and Photos
-11. Click on Concerts, no existing Concert present
-12. Let's create admin user `python manage.py createsuperuser`
-    1. Username: `admin`
-    2. Email address: _leave blank, simply press enter_
-    3. Password: Your choice, or simply `qwerty123`
-13. Run the server again `python manage.py runserver` and goto admin: `http://localhost:8000/admin/`
-14. Enter the admin user details you created in previous step.
-15. Now you are in the admin section built by Django.
-
-    One of the most powerful parts of Django is the **automatic admin interface**. It reads metadata from your models to provide a quick, model-centric interface where trusted users can manage content on your site. The admin’s recommended use is limited to an organization’s internal management tool. It’s not intended for building your entire front end around.
-
-16. Add a Concert:
-    1. Concert name: `Coachella 2023`
-    2. Duration: `72`
-    3. City: `Indio, California`
-    4. Date: `2023-04-14`
-17. Click on `View Site` meny at the top
-18. Now if you visit `Concerts`, you will see Coachella listed.
-19. Our Django application is now running, but Songs and Photos are hard coded.
-20. Open `concert\views.py`
-21. See `songs` and `photos` definition.
-
-    1. Retrieve `songs` from a REST endpoint by replacing the code with following:
-
-    ```python
-    songs = req.get(
-        "https://raw.githubusercontent.com/captainfedoraskillup/private-get-songs/main/backend/data/songs.json").json()
-    return render(request, "songs.html", {"songs": songs})
-    ```
-
-    2. Retrieve `photos` from a REST endpoint by replacing the code with following:
-
-    ```python
-    photos = req.get(
-        "https://raw.githubusercontent.com/captainfedoraskillup/private-get-pictures/main/backend/data/pictures.json").json()
-    return render(request, "photos.html", {"photos": photos})
-    ```
-
-22. Verify Songs and Photos changes. Visit the Songs section, you will see a longer list of songs, clicking on each will show its Lyrics in a modal dialog. While going into Photos, you will see more than two.
-23. Now back to Concerts, click on the concert Coachella we created. You will see an RSVP page.
-24. RSVP Page shows you details of the Concert along with an option to either: Attend, Not Attend or no Option `-`.
-25. If you open `concert_detail.html`, you will see an html form:
-
-        ```html
-                <form action="{% url 'concert_attendee' %}" method="POST">
-                {% csrf_token %}
-                <input
-                  name="concert_id"
-                  type="number"
-                  value="{{concert_details.id}}"
-                  hidden="hidden"
-                />
-                <div class="input-group mb-3">
-                  <label class="input-group-text" for="attendee_choice">RSVP</label>
-                  <select class="form-select" name="attendee_choice" required>
-                    {% for attending_choice in attending_choices %}
-                      <option {% if attending_choice.0 == status %}selected {% endif %} value="{{ attending_choice.0 }}">{{ attending_choice.1 }}</option>
-                    {% endfor %}
-                  </select>
-                </div>
-                <input type="submit" class="btn btn-primary" />
-              </form>
-        ```
-
-26. On `Submit` of this form, the details are sent to `concert_attendee` in `concert\views.py`.
-27. It does two validations:
-    `if request.user.is_authenticated:` means whether the user is authenticated. Because anonymous users are not allowed to RSVP.
-    Then `if request.method == "POST":` to check whether it is an `HTTP POST` event.
-28. From the `body` of the `POST` method, it takes `concert_id` and `attendee_choice`.
-29. Then it checks, whether a selection was made previously, if yes, then update it. Otherwise insert new selection the databaes for this user.
-30. Finally, redirect the user.
-
-## Cleanup while testing
-
-```shell
-find . -path "*/migrations/*.py" -not -name "__init__.py" -delete
-find . -path "*/migrations/*.pyc"  -delete
-find . -path "*/db.sqlite3"  -delete
-python manage.py makemigrations
+```sh
+python3.10 -m venv .venv
+. .venv/bin/activate
+python -m pip install --no-cache-dir -r requirements.txt
 python manage.py migrate
-python manage.py runserver
+python manage.py check
+python manage.py test concert
+python manage.py runserver 0.0.0.0:8000
 ```
 
-##  To move the data from SQLite to MySQL
+Open `http://127.0.0.1:8000/`, or use the course lab's port-8000 application launcher. Check the running server from another terminal:
 
-Execute:
+```sh
+curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:8000/
+```
 
-`python manage.py dumpdata > datadump.json`
+Alternatively, run `sh bin/setup.sh` with a Python 3.10+ interpreter installed; `PYTHON_BIN=python3.11 sh bin/setup.sh` selects a specific interpreter. The script creates `.venv`, installs the pinned requirements and applies migrations. It does not provision an unused Postgres container or change shell startup files. A separate compatibility check passed with existing Django 4.2.2 on Python 3.10.11; the pinned deployment dependency is Django 5.2.18.
 
-Next, change your `settings.py` to the mysql database.
+## Required application flows
 
-Finally:
+- `/` displays the original home page and navigation.
+- `/song/` displays the exact single sample song required by Part 3; its title targets the existing Bootstrap lyrics modal.
+- `/photos/` displays the exact single sample event photo required by Part 3.
+- `/signup/` validates registration, hashes passwords, automatically logs in new users, and rejects duplicate usernames without changing existing accounts.
+- `/login/` authenticates through Django; `/logout/` clears the session and returns to login. Password whitespace is preserved consistently. The supplied GET logout link is retained.
+- `/concert/` and `/concert-detail/<id>` require login and display the current user's RSVP state.
+- `/concert_attendee/` accepts authenticated, CSRF-protected POST requests and creates or updates only the current user's record. Invalid choices are rejected and missing concerts return 404.
+- `/admin/` includes the registered Concert model. Run `python manage.py createsuperuser`, choose credentials privately, then add a concert with name, duration, city and date.
 
-`python manage.py loaddata datadump.json`
+`Photo` and `Song` retain the template's `managed = False` behavior: their fields describe external resources. Migrations create Concert/ConcertAttending and Django's authentication, admin and session tables. The exact one-song/one-photo samples are intentional for Part 3, before connecting the services in the deployment exercise.
 
-##  Containerize the application
-1. build a docker image
-    ```
-    docker build . -t concert
-    ```
-1. tag docker image with the correct registry information
-    ```
-    docker tag concert captainfedora/concert:v1
-    ```
-    The above command tags to `captainfedora` repository on dockerhub with the image name of `concert` and label of `v1`
+## Configuration for deployment
 
-1. Run the docker image to validate everything is working
-    ```
-    docker run -p 8000:8000 captainfedora/concert:v1
-    ```
+| Variable | Meaning |
+|---|---|
+| `SONGS_SERVICE_URL` | Base URL; Django requests `/song` and reads the `songs` collection |
+| `PICTURES_SERVICE_URL` | Base URL; Django requests `/picture` and reads its JSON array |
+| `DJANGO_DB_PATH` | SQLite path; defaults to ignored `db.sqlite3` |
+| `DJANGO_DEBUG` | Defaults to `1` for the lab; set `0` for a configured deployed environment |
+| `DJANGO_SECRET_KEY` | Required when debug is disabled; supply through the environment |
+| `DJANGO_ALLOWED_HOSTS` | Comma-separated accepted host names |
+| `DJANGO_CSRF_TRUSTED_ORIGINS` | Comma-separated full trusted origins including `https://` |
+
+Service values are base URLs without `/song` or `/picture`. Empty URLs use the required Part 3 samples. A configured backend failure returns 503 instead of silently substituting sample data; network requests have a five-second timeout. Default hosts/CSRF settings include the course lab domains. Persistent hosted accounts and attendance require durable storage at the configured database path.
+
+## Verified locally — 22 October 2026
+
+All migrations applied to a task-specific SQLite database. Django's system check passed and `makemigrations --check --dry-run` found no drift. **21 added application tests passed**, covering pages/sample content, modal markup, signup/password/session behavior, duplicate/invalid input, login/logout, isolated RSVP updates, CSRF, admin creation/access, and configured service contracts/failures. The starter's empty test file is preserved. The suite also passed with existing Django 4.2.2 as a compatibility check.
+
+A real running HTTP server passed home/song/photo/static-asset requests, CSRF rejection, signup and later login with an exact whitespace-containing password, attendance changes, logout, admin login and concert creation through the actual admin form. Temporary test accounts and concerts were cleaned up. No real user database was used. The entrypoint separately passed fresh-schema migration, startup without a default account, repeated optional administrator bootstrap with a hashed password and one account, and real HTTP startup using an overridden `PORT`.
+
+Browser screenshots, a visible modal click, cloud deployment and integration with the actual deployed Pictures/Songs services remain separate checks. Local results do not establish a Coursera grade.
+
+## Container and cluster deployment
+
+The Dockerfile uses `python:3.11-slim` for compatibility with pinned Django 5.2.18, retaining the official lab's port **8000** and `python manage.py runserver 0.0.0.0:8000` command. It installs the application's pinned Django/requests dependencies and copies its source. The entrypoint applies committed migrations first. It starts without an auto-created administrator unless both `DJANGO_SUPERUSER_USERNAME` and `DJANGO_SUPERUSER_PASSWORD` are provided through the environment; `DJANGO_SUPERUSER_EMAIL` is optional. Bootstrap is idempotent and never replaces an existing password or promotes a normal account. No administrator credentials are included in source.
+
+```sh
+docker build -t djangoserver:1 .
+docker run --rm -p 8000:8000 djangoserver:1
+```
+
+`PORT=8080` can override the runtime bind port when a hosting platform requires it; match the platform's configured container port. The official Docker/manifest default remains 8000. An S2I builder that bypasses the Dockerfile must invoke `entrypoint.sh` before serving and use the same configured bind port.
+
+Before applying `deployment.yml`, replace `REPLACE_NAMESPACE` in its image reference with the actual registry namespace and push that image. Create a `djangoserver-config` ConfigMap containing real service base URLs and host/CSRF settings, and a `djangoserver-secret` Secret containing `DJANGO_SECRET_KEY` and any optional administrator bootstrap fields. Keep their values outside Git. The manifest references those objects and exposes port 8000; no sample URLs are presented as deployed services.
+
+```sh
+kubectl apply -f deployment.yml
+kubectl rollout status deployment/djangoserver
+kubectl port-forward service/djangoserver 8000:8000
+```
+
+The lab's runserver command and debug/static behavior are retained for course evidence. A hardened public deployment with `DJANGO_DEBUG=0` needs an appropriate static-file serving setup as well as HTTPS and configured secrets. The container's default SQLite database is in `/tmp` for random-UID compatibility and is ephemeral; use durable storage when persistence is required. Image build, registry push, cluster apply, real service URLs and browser deployment screenshots must be verified in the actual cloud environment.

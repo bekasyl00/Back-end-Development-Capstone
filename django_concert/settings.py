@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/4.1/ref/settings/
 """
 import os
 from pathlib import Path
+from django.core.exceptions import ImproperlyConfigured
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -20,13 +21,28 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/4.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = "django-insecure-__a-u30pii=rp1qde9t@zdmykl=my#x0679qk#k895i7f#=+c="
+DEBUG = os.environ.get("DJANGO_DEBUG", "1") == "1"
+SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY")
+if not SECRET_KEY:
+    if not DEBUG:
+        raise ImproperlyConfigured("DJANGO_SECRET_KEY is required when DJANGO_DEBUG=0")
+    SECRET_KEY = "django-insecure-local-course-development-only"
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+ALLOWED_HOSTS = os.environ.get(
+    "DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1,0.0.0.0,.cognitiveclass.ai,.skills.network"
+).split(",")
+CSRF_TRUSTED_ORIGINS = os.environ.get(
+    "DJANGO_CSRF_TRUSTED_ORIGINS", "https://*.cognitiveclass.ai,https://*.skills.network"
+).split(",")
+SESSION_COOKIE_SECURE = not DEBUG
+CSRF_COOKIE_SECURE = not DEBUG
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', '0.0.0.0', '*.cognitiveclass.ai']
-CSRF_TRUSTED_ORIGINS = ['https://*.cognitiveclass.ai']
+# Empty URLs retain the exact one-song/one-photo data required by Part 3.
+# Deployment values are base URLs without the /song or /picture suffix.
+SONGS_SERVICE_URL = os.environ.get("SONGS_SERVICE_URL", "")
+PICTURES_SERVICE_URL = os.environ.get("PICTURES_SERVICE_URL", "")
+SERVICE_TIMEOUT = 5
 
 # Application definition
 
@@ -77,7 +93,7 @@ WSGI_APPLICATION = "django_concert.wsgi.application"
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+        "NAME": os.environ.get("DJANGO_DB_PATH", str(BASE_DIR / "db.sqlite3")),
     }
 }
 
