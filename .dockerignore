@@ -1,0 +1,12 @@
+.git
+.venv
+venv
+.env
+.env.*
+__pycache__
+*.py[cod]
+*.sqlite3
+*.sqlite3-journal
+*.log
+.pytest_cache
+assessment-output

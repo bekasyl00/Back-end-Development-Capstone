@@ -1,5 +1,7 @@
+# Replace REPLACE_NAMESPACE with the actual registry namespace before applying.
+# Create djangoserver-config and djangoserver-secret in the deployment namespace.
 apiVersion: apps/v1
-kind: # {insert kind here}
+kind: Deployment
 metadata:
   labels:
     run: djangoserver
@@ -9,21 +11,63 @@ spec:
   selector:
     matchLabels:
       run: djangoserver
-  strategy:
-    rollingUpdate:
-      maxSurge: 25%
-      maxUnavailable: 25%
-    type: RollingUpdate
   template:
     metadata:
       labels:
         run: djangoserver
     spec:
       containers:
-      - image: # {insert image here}
-        imagePullPolicy: Always
-        name: djangoserver
-        ports:
-        - containerPort: # {insert port here}
-          protocol: TCP
+        - image: us.icr.io/REPLACE_NAMESPACE/djangoserver:1
+          imagePullPolicy: Always
+          name: djangoserver
+          ports:
+            - containerPort: 8000
+              protocol: TCP
+          envFrom:
+            - configMapRef:
+                name: djangoserver-config
+            - secretRef:
+                name: djangoserver-secret
+          env:
+            - name: PORT
+              value: "8000"
+            - name: DJANGO_DB_PATH
+              value: /tmp/django.sqlite3
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 8000
+              httpHeaders:
+                - name: Host
+                  value: localhost
+            initialDelaySeconds: 10
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 8000
+              httpHeaders:
+                - name: Host
+                  value: localhost
+            initialDelaySeconds: 20
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 100m
+              memory: 64Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
       restartPolicy: Always
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: djangoserver
+spec:
+  selector:
+    run: djangoserver
+  ports:
+    - name: http
+      port: 8000
+      targetPort: 8000
